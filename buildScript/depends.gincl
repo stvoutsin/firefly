@@ -29,7 +29,7 @@ ext {
               ':servlet-api',
               ':websocket-api']
 
-  db_lib = [':h2-1.4.194', ':sqlite-jdbc-3.20.0', ':hsqldb-2.4.0']
+  db_lib = [':h2-1.4.194', ':sqlite-jdbc-3.20.0', ':hsqldb-2.4.1']
   mysql_lib = ':mysql-connector-java-5.1.6-bin'
   starlink_lib = [':rayreg',
                   ':starlink-registry-1.2+2016.05.03',
