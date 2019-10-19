@@ -141,6 +141,8 @@ const defFireflyOptions = {
                 value: 'https://irsa.ipac.caltech.edu/TAP' },
             { label: 'NED https://ned.ipac.caltech.edu/tap',
                 value: 'https://ned.ipac.caltech.edu/tap/' },
+            { label: 'Herschel at ESAC https://archives.esac.esa.int/hsa/whsa-tap-server/tap',
+                value: 'https://archives.esac.esa.int/hsa/whsa-tap-server/tap' },
             { label: 'CADC https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/tap',
                 value: 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/tap' },
             { label: 'GAIA https://gea.esac.esa.int/tap-server/tap',
