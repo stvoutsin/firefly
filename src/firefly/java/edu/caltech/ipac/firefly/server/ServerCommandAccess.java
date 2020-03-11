@@ -14,6 +14,7 @@ import edu.caltech.ipac.firefly.server.rpc.JsonDataCommands;
 import edu.caltech.ipac.firefly.server.rpc.PushCommands;
 import edu.caltech.ipac.firefly.server.rpc.ResolveServerCommands;
 import edu.caltech.ipac.firefly.server.rpc.VisServerCommands;
+import edu.caltech.ipac.firefly.server.servlets.DataToolCommands;
 import edu.caltech.ipac.firefly.server.servlets.HttpServCommands;
 import edu.caltech.ipac.firefly.server.query.SearchServerCommands;
 import edu.caltech.ipac.firefly.server.ws.WsServerCommands;
@@ -109,6 +110,10 @@ public class ServerCommandAccess {
 
         // maybe temporary
         _cmdMap.put(ServerParams.STATIC_JSON_DATA,           new JsonDataCommands.StaticJsonData());
+
+
+        //Spectra
+        _cmdMap.put(ServerParams.SPECTRA1D_EXTRACT, new DataToolCommands.Sofia1DService());
     }
 
     public static HttpCommand getCommand(String cmd) {

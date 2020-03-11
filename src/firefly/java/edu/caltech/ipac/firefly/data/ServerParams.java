@@ -188,5 +188,9 @@ public class ServerParams {
     public static final String SOURCE_FROM = "sourceFrom";
     public static final String IS_WS = "isWs";
     public static final String FILE_ANALYSIS = "fileAnalysis";
+
+
+    //Data services
+    public static final String SPECTRA1D_EXTRACT = "sofia1d";
 }
 
