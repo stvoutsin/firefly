@@ -29,10 +29,24 @@ public class RequestAgent {
 
     private Map<String, String> cookies;
     private String protocol;
+    private String host;
     private String requestUrl;
     private String baseUrl;
     private String remoteIP;
+    private String sessId;
     private String contextPath;
+
+    public RequestAgent() {}
+
+    public RequestAgent(Map<String, String> cookies, String protocol, String requestUrl, String baseUrl, String remoteIP, String sessId, String contextPath) {
+        this.cookies = cookies;
+        this.protocol = protocol;
+        this.requestUrl = requestUrl;
+        this.baseUrl = baseUrl;
+        this.remoteIP = remoteIP;
+        this.sessId = sessId;
+        this.contextPath = contextPath;
+    }
 
     public void setCookies(Map<String, String> cookies) {
         this.cookies = cookies;
@@ -45,44 +59,54 @@ public class RequestAgent {
         return cookies;
     }
 
+    public String getSessId() {
+        return sessId;
+    }
+
+    void setSessId(String sessId) {
+        this.sessId = sessId;
+    }
+
+    String getContextPath() { return contextPath; }
+    void setContextPath(String contextPath) { this.contextPath = contextPath; };
+
     public String getProtocol() {
         return protocol;
     }
 
-    public String getContextPath() { return contextPath; }
-    public void setContextPath(String contextPath) { this.contextPath = contextPath; };
-
-    public void setProtocol(String protocol) {
+    void setProtocol(String protocol) {
         this.protocol = protocol;
     }
+
+    public String getHost() { return host;}
+
+    public void setHost(String host) { this.host = host;}
 
     public String getRequestUrl() {
         return requestUrl;
     }
 
-    public void setRequestUrl(String requestUrl) {
+    void setRequestUrl(String requestUrl) {
         this.requestUrl = requestUrl;
     }
 
-    public String getBaseUrl() {
-        return baseUrl;
-    }
+    public String getBaseUrl() { return baseUrl; }
 
     public void setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
     }
 
-    public String getRemoteIP() {
+    String getRemoteIP() {
         return remoteIP;
     }
 
-    public void setRemoteIP(String remoteIP) {
+    void setRemoteIP(String remoteIP) {
         this.remoteIP = remoteIP;
     }
 
     public void sendCookie(Cookie cookie) {}
 
-    public String getCookie(String name) {
+    String getCookie(String name) {
         return getCookies().get(name);
     }
 
@@ -101,7 +125,7 @@ public class RequestAgent {
     public void sendRedirect(String url) {}
 
     protected Map<String, String> extractCookies() {
-        return new HashMap<String, String>(0);
+        return new HashMap<>(0);
     }
 
 
@@ -132,29 +156,34 @@ public class RequestAgent {
             this.request = request;
             this.response = response;
 
+            // getting the correct info behind a reverse proxy or load balancer that terminates the SSL is a bit tricky
+            // because the requests are forwarded to the servlet container as plain http with some of the header modified
+            // attempt to reconstruct what the original request url component should be
+            // proto://host:port/uri?queryString
+
             String remoteIP = getHeader("X-Forwarded-For", request.getRemoteAddr());
-            String scheme = getHeader("X-Forwarded-Proto", request.getHeader("Referer"));
-            scheme = StringUtils.isEmpty(scheme) ? request.getScheme().toLowerCase() : scheme;
-            scheme = scheme.toLowerCase().startsWith("https") ? "https" : "http";
-
-            String serverName = request.getServerName();
-            int serverPort = request.getServerPort();
-            String serverPortDesc = serverPort == 80 || serverPort == 443 ? "" : ":" + serverPort;
+            String proto = getHeader("X-Forwarded-Proto", request.getScheme());
+            String host = getHeader("X-Forwarded-Host", request.getServerName());
+            String serverPort = getHeader("X-Forwarded-Port", String.valueOf(request.getServerPort()));
+            serverPort = serverPort.equals("80") || serverPort.equals("443") ? "" : ":" + serverPort;
             String contextPath = getPath(request);
+            String uri =  getHeader("X-Original-URI", request.getRequestURI());
 
-            String baseUrl = String.format("%s://%s%s%s/", scheme, serverName, serverPortDesc, contextPath);
-            String requestUrl = String.format("%s://%s%s%s", scheme, serverName, serverPortDesc, request.getRequestURI());
+            String baseUrl = String.format("%s://%s%s%s/", proto, host, serverPort, contextPath);
+            String requestUrl = String.format("%s://%s%s%s", proto, host, serverPort, uri);
 
             setContextPath(contextPath);
             setRemoteIP(remoteIP);
-            setProtocol(scheme);
+            setProtocol(proto);
+            setHost(host);
             setRequestUrl(requestUrl);
             setBaseUrl(baseUrl);
+            setSessId(request.getSession(true).getId());
         }
 
         @Override
         protected Map<String, String> extractCookies() {
-            HashMap<String, String> cookies = new HashMap<String, String>();
+            HashMap<String, String> cookies = new HashMap<>();
             if (request != null) {
                 if (request.getCookies() != null) {
                     for (javax.servlet.http.Cookie c : request.getCookies()) {
@@ -188,10 +217,17 @@ public class RequestAgent {
             }
         }
 
+        /**
+         * Finding the "context" path behind a reverse proxy is very tricky.
+         * For that reason, if it's proxied to a path that does not end with the same context as the app server,
+         * then the header X-Forwarded-Path has to define what that value is.
+         * Otherwise, it will try to resolve is using the header X-Original-URI.
+         * If both are missing, it will assume the context is the same as what's deployed on the app server
+         */
         private String getPath(HttpServletRequest request) {
             String path = request.getHeader("X-Forwarded-Path");
             if (path == null) {
-                path = request.getHeader("x-original-uri");
+                path = request.getHeader("X-Original-URI");
                 if (path != null) {
                     path = path.substring(0, path.indexOf(request.getContextPath()) + request.getContextPath().length());
                 }
